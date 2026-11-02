@@ -1,0 +1,51 @@
+-- 问答社区数据库结构
+CREATE DATABASE IF NOT EXISTS qa_community CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE qa_community;
+
+CREATE TABLE IF NOT EXISTS users (
+  id         INT PRIMARY KEY AUTO_INCREMENT,
+  username   VARCHAR(50)  NOT NULL UNIQUE,
+  email      VARCHAR(120) NOT NULL UNIQUE,
+  password   VARCHAR(255) NOT NULL,
+  avatar     VARCHAR(255),
+  points     INT NOT NULL DEFAULT 0,
+  create_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS question (
+  id            INT PRIMARY KEY AUTO_INCREMENT,
+  title         VARCHAR(200) NOT NULL,
+  content       TEXT,
+  tags          JSON,
+  author_id     INT NOT NULL,
+  views         INT NOT NULL DEFAULT 0,
+  answers_count INT NOT NULL DEFAULT 0,
+  votes         INT NOT NULL DEFAULT 0,
+  is_solved     TINYINT(1) NOT NULL DEFAULT 0,
+  create_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS answers (
+  id          INT PRIMARY KEY AUTO_INCREMENT,
+  content     TEXT,
+  question_id INT NOT NULL,
+  author_id   INT NOT NULL,
+  votes       INT NOT NULL DEFAULT 0,
+  is_accepted TINYINT(1) NOT NULL DEFAULT 0,
+  create_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE,
+  FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS votes (
+  id          INT PRIMARY KEY AUTO_INCREMENT,
+  user_id     INT NOT NULL,
+  target_type VARCHAR(20) NOT NULL,
+  target_id   INT NOT NULL,
+  create_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_vote (user_id, target_type, target_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
