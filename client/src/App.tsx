@@ -7,6 +7,10 @@ import Write from './pages/Write';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Topics from './pages/Topics';
+import Columns from './pages/Columns';
+import Favorites from './pages/Favorites';
+import Following from './pages/Following';
 
 export default function App() {
   return (
@@ -14,6 +18,8 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/post/:id" element={<PostDetail />} />
+        <Route path="/topics" element={<Topics />} />
+        <Route path="/columns" element={<Columns />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route
@@ -29,6 +35,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/favorites"
+          element={
+            <ProtectedRoute>
+              <Favorites />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/following"
+          element={
+            <ProtectedRoute>
+              <Following />
             </ProtectedRoute>
           }
         />

@@ -13,6 +13,14 @@ const findById = async (id) => {
   return rows[0] || null;
 };
 
+const findList = async ({ limit = 10 } = {}) => {
+  const [rows] = await query(
+    `SELECT ${USER_PUBLIC_FIELDS} FROM users ORDER BY points DESC LIMIT ?`,
+    [Number(limit)]
+  );
+  return rows;
+};
+
 const findByEmail = async (email) => {
   const [rows] = await query('SELECT * FROM users WHERE email = ?', [email]);
   return rows[0] || null;
@@ -28,4 +36,12 @@ const changePoints = async (id, delta) => {
   await query('UPDATE users SET points = points + ? WHERE id = ?', [delta, id]);
 };
 
-module.exports = { USER_PUBLIC_FIELDS, create, findById, findByEmail, findByUsername, changePoints };
+module.exports = {
+  USER_PUBLIC_FIELDS,
+  create,
+  findById,
+  findByEmail,
+  findByUsername,
+  findList,
+  changePoints,
+};
