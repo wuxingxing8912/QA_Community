@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import client from '../api/client';
 import type { Question } from '../types';
 
@@ -16,9 +16,11 @@ export default function Home() {
   const [list, setList] = useState<Question[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [favMap, setFavMap] = useState<Record<number, boolean>>({});
 
   const [kwInput, setKwInput] = useState(keyword);
   const [tagInput, setTagInput] = useState(tag);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
@@ -43,6 +45,20 @@ export default function Home() {
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, keyword, tag, solved, sort]);
+
+  // 获取当前登录用户对列表问题的收藏状态
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || !list.length) {
+      setFavMap({});
+      return;
+    }
+    const ids = list.map((q) => q.id).join(',');
+    client
+      .get(`/favorites/status?question_id=${ids}`)
+      .then((res) => setFavMap(res.data.map || {}))
+      .catch(() => setFavMap({}));
+  }, [list]);
 
   const updateParams = (next: Record<string, string>) => {
     const merged = new URLSearchParams(searchParams);
@@ -121,12 +137,24 @@ export default function Home() {
         <ul className="space-y-3">
           {list.map((q) => (
             <li key={q.id} className="rounded bg-white p-4 shadow-sm">
-              <Link
-                to={`/post/${q.id}`}
-                className="text-lg font-medium text-gray-900 hover:text-indigo-600"
-              >
-                {q.title}
-              </Link>
+              <div className="flex items-start justify-between gap-3">
+                <Link
+                  to={`/post/${q.id}`}
+                  className="text-lg font-medium text-gray-900 hover:text-indigo-600"
+                >
+                  {q.title}
+                </Link>
+                <button
+                  onClick={() => toggleFavorite(q)}
+                  title={favMap[q.id] ? '取消收藏' : '收藏'}
+                  className={
+                    (favMap[q.id] ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400') +
+                    ' shrink-0 text-xl leading-none'
+                  }
+                >
+                  {favMap[q.id] ? '★' : '☆'}
+                </button>
+              </div>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 {q.is_solved === 1 && (
                   <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">
@@ -189,4 +217,17 @@ export default function Home() {
     else merged.delete('page');
     setSearchParams(merged);
   }
+
+  const toggleFavorite = async (q: Question) => {
+    if (!localStorage.getItem('token')) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const { data } = await client.post('/favorites', { question_id: q.id });
+      setFavMap((m) => ({ ...m, [q.id]: data.favorited }));
+    } catch {
+      window.alert('收藏失败，请稍后重试');
+    }
+  };
 }

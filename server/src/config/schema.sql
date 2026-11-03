@@ -49,3 +49,13 @@ CREATE TABLE IF NOT EXISTS votes (
   UNIQUE KEY uniq_vote (user_id, target_type, target_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS favorites (
+  id          INT PRIMARY KEY AUTO_INCREMENT,
+  user_id     INT NOT NULL,
+  question_id INT NOT NULL,
+  create_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_fav (user_id, question_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE
+);

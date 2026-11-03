@@ -15,6 +15,7 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [qVoted, setQVoted] = useState(false);
+  const [favorited, setFavorited] = useState(false);
   const [aVoted, setAVoted] = useState<Record<number, boolean>>({});
   const [answerText, setAnswerText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,18 +28,29 @@ export default function PostDetail() {
       setQuestion(data.question);
       setAnswers(data.answers || []);
       if (user) {
-        const [qs, ...as] = await Promise.all([
-          client.get(`/votes/status?target_type=question&target_id=${id}`),
-          ...(data.answers || []).map((a: Answer) =>
-            client.get(`/votes/status?target_type=answer&target_id=${a.id}`)
-          ),
-        ]);
-        setQVoted(qs.data.voted);
-        const map: Record<number, boolean> = {};
-        (data.answers || []).forEach((a: Answer, i: number) => {
-          map[a.id] = as[i].data.voted;
-        });
-        setAVoted(map);
+        try {
+          const [qs, ...as] = await Promise.all([
+            client.get(`/votes/status?target_type=question&target_id=${id}`),
+            ...(data.answers || []).map((a: Answer) =>
+              client.get(`/votes/status?target_type=answer&target_id=${a.id}`)
+            ),
+          ]);
+          setQVoted(qs.data.voted);
+          const map: Record<number, boolean> = {};
+          (data.answers || []).forEach((a: Answer, i: number) => {
+            map[a.id] = as[i].data.voted;
+          });
+          setAVoted(map);
+        } catch {
+          /* 投票状态加载失败不影响正文展示 */
+        }
+        // 收藏状态单独加载，失败也不影响页面
+        try {
+          const { data: fs } = await client.get(`/favorites/status?question_id=${id}`);
+          setFavorited(Boolean(fs.map?.[Number(id)]));
+        } catch {
+          /* ignore */
+        }
       }
     } catch {
       setError('问题不存在或加载失败');
@@ -66,6 +78,16 @@ export default function PostDetail() {
     });
     setQVoted(data.voted);
     setQuestion((q) => (q ? { ...q, votes: data.votes } : q));
+  };
+
+  const toggleFavorite = async () => {
+    if (!user) return navigate('/login');
+    try {
+      const { data } = await client.post('/favorites', { question_id: Number(id) });
+      setFavorited(data.favorited);
+    } catch {
+      window.alert('收藏失败，请稍后重试');
+    }
   };
 
   const toggleAnswerVote = async (a: Answer) => {
@@ -150,7 +172,7 @@ export default function PostDetail() {
         <div className="prose mt-4 max-w-none text-gray-800">
           <ReactMarkdown>{question.content}</ReactMarkdown>
         </div>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             onClick={toggleQuestionVote}
             className={
@@ -159,6 +181,15 @@ export default function PostDetail() {
             }
           >
             ♥ {question.votes} 赞
+          </button>
+          <button
+            onClick={toggleFavorite}
+            className={
+              (favorited ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-600') +
+              ' rounded px-3 py-1 text-sm hover:opacity-80'
+            }
+          >
+            {favorited ? '★ 已收藏' : '☆ 收藏'}
           </button>
         </div>
       </article>

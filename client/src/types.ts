@@ -21,6 +21,7 @@ export interface Question {
   updated_at: string;
   author_name?: string;
   author_avatar?: string | null;
+  favorited?: boolean;
 }
 
 export interface Answer {
